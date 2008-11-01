@@ -1,0 +1,14 @@
+HKCR
+{
+	NoRemove CLSID
+	{
+		ForceRemove {89796427-6C3D-4710-951F-9DFB0D702DA8} = s 'Sample Vertical Bar'
+		{
+			ForceRemove 'Implemented Categories'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+		}
+	}
+}
