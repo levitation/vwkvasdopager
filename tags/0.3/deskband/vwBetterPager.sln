@@ -1,0 +1,52 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "deskband", "deskband.vcproj", "{61379BA2-DD31-4773-B800-ABB9E67D9928}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vwBetterPager", "..\vwBetterPager\vwBetterPager.vcproj", "{F72F30D4-41F8-4190-9546-CF1EDD520863}"
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = Release
+		ConfigName.2 = Release MinDependency
+		ConfigName.3 = Release MinSize
+		ConfigName.4 = Unicode Debug
+		ConfigName.5 = Unicode Release MinDependency
+		ConfigName.6 = Unicode Release MinSize
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Debug.ActiveCfg = Debug|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Debug.Build.0 = Debug|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Release.ActiveCfg = Unicode Release MinSize|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Release.Build.0 = Unicode Release MinSize|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Release MinDependency.ActiveCfg = Release MinDependency|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Release MinDependency.Build.0 = Release MinDependency|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Release MinSize.ActiveCfg = Release MinSize|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Release MinSize.Build.0 = Release MinSize|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Unicode Debug.ActiveCfg = Unicode Debug|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Unicode Debug.Build.0 = Unicode Debug|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Unicode Release MinDependency.ActiveCfg = Unicode Release MinDependency|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Unicode Release MinDependency.Build.0 = Unicode Release MinDependency|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Unicode Release MinSize.ActiveCfg = Unicode Release MinSize|Win32
+		{61379BA2-DD31-4773-B800-ABB9E67D9928}.Unicode Release MinSize.Build.0 = Unicode Release MinSize|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Debug.ActiveCfg = Debug|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Debug.Build.0 = Debug|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Release.ActiveCfg = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Release.Build.0 = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Release MinDependency.ActiveCfg = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Release MinDependency.Build.0 = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Release MinSize.ActiveCfg = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Release MinSize.Build.0 = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Unicode Debug.ActiveCfg = Debug|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Unicode Debug.Build.0 = Debug|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Unicode Release MinDependency.ActiveCfg = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Unicode Release MinDependency.Build.0 = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Unicode Release MinSize.ActiveCfg = Release|Win32
+		{F72F30D4-41F8-4190-9546-CF1EDD520863}.Unicode Release MinSize.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
