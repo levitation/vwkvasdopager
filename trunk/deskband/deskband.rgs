@@ -2,7 +2,7 @@ HKCR
 {
 	NoRemove CLSID
 	{
-		ForceRemove {8E0D7E18-8018-4050-980D-36D3F20DD7C7} = s 'Переключалка рабочих столов'
+		ForceRemove {8E0D7E18-8018-4050-980D-36D3F20DD7C7} = s 'Desktop pager'
 		{
 			ForceRemove 'Implemented Categories'
 			InprocServer32 = s '%MODULE%'
