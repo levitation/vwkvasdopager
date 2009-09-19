@@ -85,8 +85,6 @@ END
 //
 
 IDR_DESKBAND          REGISTRY DISCARDABLE    "deskband.rgs"
-IDR_VERTICALBAR       REGISTRY DISCARDABLE    "vertbar.rgs"
-IDR_HORIZONTALBAR     REGISTRY DISCARDABLE    "horizbar.rgs"
 
 /////////////////////////////////////////////////////////////////////////////
 
