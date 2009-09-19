@@ -7,19 +7,8 @@
 #include <tchar.h>
 #include "Messages.h"
 #include "Defines.h"
+#include <time.h>
 //#include "commctrl.h"
-
-#include "tipexample.h"
-
-
-// FIXME: Иногда начинает безумено отжирать проц - FIXED
-// TODO: При смене разрешения экрана, настроек программы, ширины статусбара надо обновлять настройки
-// TODO: Сделать диалог с настройками
-// TODO: Сделать всплывающую подсказку с заголовком наведённого окна
-// FIXME: Иногда первое окно в системе не получается перетащить (например "Диспетчер задач")
-
-void create2ndWindow();
-void update2ndWindow();
 
 int messages = 0;
 
@@ -31,48 +20,34 @@ int COEF = 1; // scale factor
 int NUMDESKX; // desktop count
 int NUMDESKY; // desktop count
 
-// Desktop drawing brushes
-HBRUSH activeDesk, inactiveDesk, activeWindow, inactiveWindow; 
-HPEN pagerFrame, activeWframe, inactiveWframe;
-
 // Window handlers
-HWND dummy = 0;		// app window
-HWND parent = 0;	// deskband window
-HWND mainw = 0;		// main window
 HWND vwHandle = 0;  // virtuawin
+
+#include "utils.h"
+#include "tipexample.h"
+#include "mainWindow.h"
+#include "canvasWindow.h"
+
+
+// FIXME: Иногда начинает безумено отжирать проц - FIXED
+// TODO: При смене разрешения экрана, настроек программы, ширины статусбара надо обновлять настройки
+// TODO: Сделать диалог с настройками
+// TODO: Сделать всплывающую подсказку с заголовком наведённого окна
+// FIXME: Иногда первое окно в системе не получается перетащить (например "Диспетчер задач")
+
+
+
+
+
+
 
 int tipXpos = 0;
 int tipYpos = 0;
 
-HFONT font;	// font for text rendering
 
 HWND tipwin = 0;
 
-// search for host window
-HWND findWindow(HWND parent)
-{
-  HWND p,p2;
-  char cls[1024];
 
-  if(parent == NULL)
-    return NULL;
-
-  p = GetTopWindow(parent);
-  while(p)
-  {
-    GetClassName(p, cls, sizeof(cls));
-    if(strcmp(cls,"vwBetterPagerHost") == 0)
-      return p;
-
-    p2 = findWindow(p);
-    if(p2)
-      return p2;
-
-    p = GetNextWindow(p, GW_HWNDNEXT);
-  }
-
-  return NULL;
-}
 
 // initializes desktop sizes etc.
 void setDefaults()
@@ -90,7 +65,10 @@ void setDefaults()
 
   GetWindowRect(parent,&winr);
 
-  COEF = NUMDESKY*scrH/(winr.bottom-winr.top);  
+  if(winr.bottom-winr.top > 0)
+    COEF = NUMDESKY*scrH/(winr.bottom-winr.top);  
+  else
+    COEF = 1;
 
   WINW = scrW/COEF;
   WINH = scrH/COEF;   
@@ -133,16 +111,23 @@ HWND dragged = 0;
 HWND draggedc = 0;
 int dragdesk, overdesk, oldoverdesk;
 int curdesk = 0;
+int lastredraw = 0;
 // main rendering procedure
 int redrawWindow(HWND hwnd)
 {
   RECT wrc;
   HWND h, hOld;
   int i,j;
+
+  int now = GetTickCount();
+  if(now - lastredraw < 100)
+    return 0;
+
+  lastredraw = now;
   
-  ohdc = BeginPaint(mainw, &ps);
+  ohdc = BeginPaint(canvasWindow, &ps);
   hdc = CreateCompatibleDC(ohdc);
-  GetClientRect(mainw, &dcr);
+  GetClientRect(canvasWindow, &dcr);
   hBmp = CreateCompatibleBitmap(ohdc, dcr.right-dcr.left, dcr.bottom-dcr.top);
   SelectObject(hdc,hBmp);
   SelectObject(hdc, font);
@@ -165,7 +150,9 @@ int redrawWindow(HWND hwnd)
   }
 
   // find last window
-  hOld = h = GetForegroundWindow();
+  if((h = GetForegroundWindow()) == NULL)
+    h = GetTopWindow(NULL);
+  hOld = h;
   while(h)
   {
     hOld = h;
@@ -336,7 +323,7 @@ int redrawWindow(HWND hwnd)
 
   DeleteDC(hdc);
   DeleteObject(hBmp);
-  EndPaint(mainw, &ps);
+  EndPaint(canvasWindow, &ps);
 
   return 0L;
 }
@@ -353,16 +340,16 @@ DummyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     /* The handle to VirtuaWin comes in the wParam */
     vwHandle = (HWND) wParam; /* Should be some error handling here if NULL */        
     setDefaults();    
-    update2ndWindow();
+    updateCanvasWindow();
     messages = 1;
     // break; NO BREAK HERE, IT'S OK
 
   case WM_TIMER:
   case MOD_CFGCHANGE:
-    if(!mainw)
+    if(!canvasWindow)
       return 0;
     setDefaults();    
-    update2ndWindow();
+    updateCanvasWindow();
     break;
 
   case MOD_QUIT:
@@ -392,42 +379,6 @@ DummyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
   }
 
   return 0;  
-}
-
-HWND getWindowAt(int x, int y, int desk)
-{
-  HWND h = GetForegroundWindow(); 
-  POINT pt = {x, y};
-  while(h)
-  {
-    int flag  = (int)SendMessage(vwHandle, VW_WINGETINFO, (WPARAM) h, NULL);
-    if(vwWindowGetInfoDesk(flag) == desk)
-    {
-      if(h != mainw)
-      {
-        RECT r;        
-        GetWindowRect(h, &r);
-
-        if(r.left < -20000)
-        {
-          r.left+=25000;
-          r.right+=25000;
-        }
-        if(r.top < -20000)
-        {
-          r.top+=25000;
-          r.bottom+=25000;
-        }
-
-        if(PtInRect(&r, pt))
-        {                   
-          return h;
-        }
-      }
-    }
-    h = GetNextWindow(h, GW_HWNDNEXT);
-  }
-  return 0;
 }
 
 int capture = 0;
@@ -540,7 +491,9 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
       {
         //MessageBeep(0);
         PostMessage(vwHandle, VW_ASSIGNWIN, (WPARAM)dragged, desk);
-        BringWindowToTop(dragged);
+        if(desk == curdesk)
+          PostMessage(vwHandle, VW_FOREGDWIN, (WPARAM)dragged, 0);
+
         dragged = 0;
         draggedc = 0;
       }
@@ -558,7 +511,7 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
           while(ymPos > WINH)
             ymPos-=WINH;
 
-          HWND h = getWindowAt(xmPos*COEF, ymPos*COEF, desk);
+          HWND h = getWindowAt(xmPos*COEF, ymPos*COEF, desk, canvasWindow);
           if(h)
           {
             //MessageBeep(0);
@@ -613,7 +566,7 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
       overdesk = ((dxPos) + (dyPos)*NUMDESKX)+1;
 
       RECT mre;      
-      GetWindowRect(mainw, &mre);
+      GetWindowRect(canvasWindow, &mre);
       //POINT pt = {xPos+mre.left, yPos+mre.top};
 
       //if(capture)
@@ -642,7 +595,7 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         else if(draggedc)
           htw = draggedc;
         else 
-          htw = getWindowAt(tipXpos*COEF, tipYpos*COEF, overdesk);
+          htw = getWindowAt(tipXpos*COEF, tipYpos*COEF, overdesk, canvasWindow);
 
         if(htw != tipwin)
         {          
@@ -712,7 +665,7 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
       while(yPos > WINH)
         yPos-=WINH;
 
-      HWND h = getWindowAt(xPos*COEF, yPos*COEF, desk);
+      HWND h = getWindowAt(xPos*COEF, yPos*COEF, desk, canvasWindow);
       if(!h)
         return 0;      
 
@@ -747,194 +700,20 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
   return 0;
 }
 
-void create2ndWindow()
-{
-  WNDCLASS wc;
-
-  parent = findWindow(FindWindow("Shell_TrayWnd", NULL));
-  if(parent == NULL)
-  {
-    MessageBox(0,_T("Tray not found!"),_T("Module Plugin"), 0);
-    return;
-  }  
-
-  memset(&wc, 0, sizeof(WNDCLASS));
-  wc.style = CS_HREDRAW | CS_VREDRAW;
-  wc.lpfnWndProc = (WNDPROC)MainWndProc;
-  wc.hInstance = 0;
-  wc.hCursor = LoadCursor(0, IDC_ARROW);
-  /* IMPORTANT! The classname must be the same as the filename since VirtuaWin uses 
-  this for locating the window */
-  wc.lpszClassName = _T("vwBetterPager");
-
-  if (!RegisterClass(&wc))
-  {
-    MessageBox(mainw,_T("Cannot registed vwBetterPager!"),_T("Module Plugin"), 0);
-    //return;
-  }
-
-  mainw = CreateWindowEx(
-    0,                      // no extended styles
-    _T("vwBetterPager"),       // class name
-    _T(""),           // window name
-    WS_CHILD  ,//WS_ |   // overlapped window
-    //WS_HSCROLL |        // horizontal scroll bar
-    //WS_VSCROLL,         // vertical scroll bar
-    0,          // default horizontal position
-    0,          // default vertical position
-    1,          // default width
-    1,          // default height
-    parent,            // no parent or owner window
-    (HMENU) NULL,           // class menu used
-    0,              // instance handle
-    NULL);                  // no window creation data
-
-  if (!mainw)    
-  {
-    MessageBox(mainw,_T("Cannot create window!"),_T("Module Plugin"), 0);
-    //return;
-  }
-
-  ShowWindow(mainw, SW_HIDE);
-  SetWindowLong(mainw, GWL_EXSTYLE, GetWindowLong(mainw, GWL_EXSTYLE) |
-    WS_EX_TOOLWINDOW);
-  ShowWindow(mainw, SW_SHOW);
-
-  //ShowWindow(hwnd, SW_SHOWDEFAULT);
-  UpdateWindow(mainw);
-
-  SetTimer(mainw, 1, 300, NULL);
-  //SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE	| SWP_NOSIZE);
-
-  font = CreateFont(
-    8,
-    0,
-    GM_COMPATIBLE,
-    0,
-    FW_DONTCARE,
-    FALSE,
-    FALSE,
-    FALSE,
-    DEFAULT_CHARSET,
-    OUT_DEFAULT_PRECIS,
-    CLIP_DEFAULT_PRECIS,
-    DRAFT_QUALITY,
-    DEFAULT_PITCH,
-    "CourierNew"
-    );
-
-  activeWindow = CreateSolidBrush(RGB(0x33,0x66,0x99));
-  inactiveWindow = CreateSolidBrush(RGB(210,210,210));
-
-  activeDesk = CreateSolidBrush(RGB(0x00,0x33,0x66));
-  inactiveDesk = CreateSolidBrush(RGB(120,120,120));
-
-  pagerFrame = CreatePen(PS_SOLID, 0, RGB(210,210,210));
-  activeWframe = CreatePen(PS_SOLID, 0, RGB(255,255,255));
-  inactiveWframe = CreatePen(PS_SOLID, 0, RGB(0,0,0));
-
-  //InitCommonControls();
-
-  //tip = CreateWindow(TOOLTIPS_CLASS, (LPSTR) NULL, TTS_ALWAYSTIP, 
-  //      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
-  //      mainw, (HMENU) NULL, 0, NULL); 
-  createTooltip(mainw);
-
-
-
-  /*TRACKMOUSEEVENT tr;
-  tr.cbSize = sizeof(tr);
-  tr.hwndTrack = mainw;
-  tr.dwFlags = TME_LEAVE;
-  _TrackMouseEvent(&tr);*/
-}
-
 //int tipinit = 0;
-
-void update2ndWindow()
-{
-  //TOOLINFO ti; 
-  
-  SendMessage(vwHandle, VW_WINMANAGE, (WPARAM)tip, 0); 
-  SetWindowPos(mainw, HWND_TOPMOST, 0, 0, WINW*NUMDESKX+1, WINH*NUMDESKY, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-
-  /*ti.cbSize = sizeof(ti);
-  ti.hinst = 0;
-  ti.uId = 1;//(UINT)tip;
-  ti.uFlags = 0;//TTF_IDISHWND;
-  ti.lpszText = "hello";//LPSTR_TEXTCALLBACK;
-  ti.hwnd = mainw;
-  ti.rect.left = 0;
-  ti.rect.top = 0;
-  ti.rect.bottom = 100;
-  ti.rect.right = 100;
-  ti.lParam = 0;
-  //if(tipinit == 0)
-    PostMessage(tip, TTM_ADDTOOL, 0, (LPARAM)&ti); 
-  //else
-  //  PostMessage(tip, TTM_SETTOOLINFO, 0, (LPARAM)&ti); */
-}
-
-
-
-
-void delete2ndWindow()
-{
-  if(mainw == 0)
-    return;
-
-  DeleteObject(activeWindow);
-  DeleteObject(inactiveWindow);
-  DeleteObject(activeDesk);
-  DeleteObject(inactiveDesk);
-  DeleteObject(pagerFrame);
-  DeleteObject(font); 
-}
 
 /*
 * Main startup function
 */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, INT nCmdShow)
-{
-  WNDCLASS wc;
+{  
   MSG msg;
+  createMainWindow(hInstance);
+  
+  createBrushes();
 
-  memset(&wc, 0, sizeof(WNDCLASS));
-  wc.style = CS_HREDRAW | CS_VREDRAW;
-  wc.lpfnWndProc = (WNDPROC)DummyWndProc;
-  wc.hInstance = hInstance ;
-  /* IMPORTANT! The classname must be the same as the filename since VirtuaWin uses 
-  this for locating the window */
-  wc.lpszClassName = _T("vwBetterPager.exe");
-
-  if (!RegisterClass(&wc))
-  {
-    MessageBox(0,_T("Cannot registed vwBetterPager.exe!"),_T("Module Plugin"), 0);
-    return 0;
-  }
-
-  /* In this example, the window is never shown */
-  dummy = CreateWindow(_T("vwBetterPager.exe"),
-    _T("vwBetterPager"), 
-    WS_POPUP,
-    CW_USEDEFAULT, 
-    0, 
-    CW_USEDEFAULT, 
-    0,
-    NULL,
-    NULL,
-    hInstance,
-    NULL);
-
-  if(!dummy)
-  {
-    MessageBox(0,_T("Cannot create dummy!"),_T("Module Plugin"), 0);
-    return FALSE;
-  }  
-
-  SetTimer(dummy, 1, 2000, NULL);
-
-  create2ndWindow();
+  createCanvasWindow();
+  createTooltip(canvasWindow);
 
   /* main messge loop */
   while (GetMessage(&msg, NULL, 0, 0) != 0)
@@ -943,7 +722,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DispatchMessage(&msg);
   }
 
-  delete2ndWindow();
+  deleteCanvasWindow();
 
   return (int)msg.wParam;
 }

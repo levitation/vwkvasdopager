@@ -105,6 +105,12 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
+				RelativePath="canvasWindow.h">
+			</File>
+			<File
+				RelativePath="mainWindow.h">
+			</File>
+			<File
 				RelativePath="stdafx.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -121,6 +127,9 @@
 			</File>
 			<File
 				RelativePath="tipexample.h">
+			</File>
+			<File
+				RelativePath="utils.h">
 			</File>
 			<File
 				RelativePath="vwBetterPager.cpp">

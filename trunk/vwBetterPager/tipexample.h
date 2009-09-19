@@ -114,7 +114,7 @@ void createTooltip(HWND hwndOwner)
   tipfont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 } 
 
-extern HWND mainw;
+extern HWND canvasWindow;
 extern int WINW;
 extern int overdesk;
 
@@ -140,7 +140,7 @@ void updateTip()
   HDC dc = GetWindowDC(tip);
   SelectObject(dc, tipfont);
 
-  GetWindowRect(mainw, &r);
+  GetWindowRect(canvasWindow, &r);
 
   GetTextExtentPoint(dc, tiptext, strlen(tiptext), &s);
 
