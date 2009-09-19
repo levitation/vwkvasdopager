@@ -1,9 +1,9 @@
-HWND createCanvasWindow();
-void updateCanvasWindow();
+HWND canvasWindowCreate();
+void canvasWindowUpdate();
 
-LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+int redrawWindow(HWND hwnd);
 
-HWND canvasWindow = 0;		// main window
+HWND canvasWindowHandle = 0;		// main window
 
 // Desktop drawing brushes
 HBRUSH activeDesk, inactiveDesk, activeWindow, inactiveWindow; 
@@ -15,30 +15,286 @@ HFONT font;	// font for text rendering
 HWND parent = 0;	// deskband window
 
 
+#define WM_MOUSEWHEEL                   0x020A
 
 
+// dragged window handler
+HWND dragged = 0;
+HWND draggedc = 0;
+int dragdesk, overdesk, oldoverdesk;
+int curdesk = 0;
+int lastredraw = 0;
 
-HWND createCanvasWindow()
+
+int oldx, oldy;
+
+LRESULT CALLBACK
+canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+  if(messages == 0)
+  {
+    if(msg == WM_PAINT)
+    {
+      PAINTSTRUCT ps;
+      HDC dc = BeginPaint(hwnd, &ps);
+      EndPaint(hwnd, &ps);
+    }
+    else
+      return DefWindowProc(hwnd, msg, wParam, lParam);
+
+    return 0;
+  }
+
+  switch (msg)
+  {        
+  case WM_TIMER:
+    InvalidateRect(hwnd, NULL, FALSE);
+    break;
+
+  case WM_DESTROY:
+    canvasWindowHandle = 0;
+    break;
+
+  case WM_PAINT:
+    redrawWindow(hwnd);
+    break;
+
+  case WM_LBUTTONUP:
+    {
+      int xPos = LOWORD(lParam)/WINW;  // horizontal position of cursor
+      int yPos = HIWORD(lParam)/WINH;  // vertical position of cursor      
+
+      if(xPos >= NUMDESKX)
+        xPos = NUMDESKX-1;
+      if(yPos >= NUMDESKY)
+        yPos = NUMDESKY-1;
+
+      int desk = ((xPos) + (yPos)*NUMDESKX)+1;      
+
+      if(dragged)
+      {
+        //MessageBeep(0);
+        PostMessage(vwHandle, VW_ASSIGNWIN, (WPARAM)dragged, desk);
+        if(desk == curdesk)
+          PostMessage(vwHandle, VW_FOREGDWIN, (WPARAM)dragged, 0);
+
+        dragged = 0;
+        draggedc = 0;
+      }
+      else
+      {
+        if(desk == curdesk)
+        {
+          //MessageBeep(0);
+
+          int xmPos = LOWORD(lParam);  // horizontal position of cursor
+          int ymPos = HIWORD(lParam);  // vertical position of cursor    
+
+          while(xmPos > WINW)
+            xmPos-=WINW;
+          while(ymPos > WINH)
+            ymPos-=WINH;
+
+          HWND h = getWindowAt(xmPos*COEF, ymPos*COEF, desk, canvasWindowHandle);
+          if(h)
+          {
+            //MessageBeep(0);
+            BringWindowToTop(h);
+          }
+        }
+        
+        //MessageBeep(0);
+        // MessageBox(hwnd,_T("Butn!"),_T("Module Plugin"), 0);
+        //PostMessage(vwHandle, VW_ASSIGNWIN, (WPARAM)hwnd, desk);
+        //PostMessage(vwHandle, VW_ASSIGNWIN, (WPARAM)tip, desk);
+        //ShowWindow(tip, SW_HIDE);
+        //tiptext[0] = 0;
+        //updateTip();
+        //disableTip();
+        SendMessage(vwHandle, VW_CHANGEDESK, desk, desk);
+        //enableTip();
+        draggedc = 0;
+        
+      }
+      InvalidateRect(hwnd, NULL, FALSE);
+    }
+    break;
+
+  case WM_MOUSEMOVE:
+    {     
+      int xPos = tipXpos = LOWORD(lParam);  // horizontal position of cursor
+      int yPos = tipYpos = HIWORD(lParam);  // vertical position of cursor            
+      
+      int dxPos = LOWORD(lParam)/WINW;  // horizontal position of cursor
+      int dyPos = HIWORD(lParam)/WINH;  // vertical position of cursor      
+
+      if(dxPos >= NUMDESKX)
+        dxPos = NUMDESKX-1;
+      if(dyPos >= NUMDESKY)
+        dyPos = NUMDESKY-1;
+
+      overdesk = ((dxPos) + (dyPos)*NUMDESKX)+1;
+
+      RECT mre;      
+      GetWindowRect(canvasWindowHandle, &mre);
+      //POINT pt = {xPos+mre.left, yPos+mre.top};
+
+      //if(capture)
+      //  if(!PtInRect(&mre, pt))
+      //  {        
+      //    ReleaseCapture(); // FIXME: косяк: после повторного захода в окно тултип не отображается
+      //    tiptext[0] = 0;
+      //    capture = 0;
+      //    updateTip(xPos);
+      //    break;
+      //  }
+      //else
+      //{
+      //  MessageBeep(0);
+      //}
+
+      {
+        while(tipXpos > WINW)
+          tipXpos-=WINW;
+        while(tipYpos > WINH)
+          tipYpos-=WINH;
+        
+        HWND htw;
+        if(dragged)
+          htw = dragged;
+        else if(draggedc)
+          htw = draggedc;
+        else 
+          htw = getWindowAt(tipXpos*COEF, tipYpos*COEF, overdesk, canvasWindowHandle);
+
+        if(htw != tipwin)
+        {          
+          tipwin = htw;
+          if(tipwin)
+          {
+            GetWindowText(tipwin, tiptext, sizeof(tiptext));
+            //if(capture == 0)
+           // {
+            //  SetCapture(mainw);
+            //  capture = 1;
+            //}
+          }
+          else
+            tiptext[0] = 0;
+          tooltipUpdate();  
+        }
+      }     
+
+      if(dragged)
+      {
+        //MessageBeep(0);
+        if(oldoverdesk != overdesk)
+        {       
+          oldoverdesk = overdesk;
+          InvalidateRect(hwnd, NULL, FALSE);
+        }
+      }
+      if(draggedc)
+      {
+        if(((oldx-xPos)*(oldx-xPos) + (oldy-yPos)*(oldy-yPos)) > 25)
+        {
+          //MessageBeep(0);
+          dragged = draggedc;
+          draggedc = 0;
+          InvalidateRect(hwnd, NULL, FALSE);
+        }
+      }
+    }
+
+    break;
+
+  case WM_LBUTTONDOWN:
+    {
+      int xPos = LOWORD(lParam);  // horizontal position of cursor
+      int yPos = HIWORD(lParam);  // vertical position of cursor
+
+      oldx = xPos;
+      oldy = yPos;
+
+      dragged = 0;
+      //HWND h = GetForegroundWindow();
+      //int curdesk = SendMessage(vwHandle, VW_CURDESK, 0, 0);
+                         
+      int dxpos = xPos/WINW;  // horizontal position of cursor
+      int dypos = yPos/WINH;  // vertical position of cursor      
+
+      if(dxpos >= NUMDESKX)
+        dxpos = NUMDESKX-1;
+      if(dypos >= NUMDESKY)
+        dypos = NUMDESKY-1;
+
+      int desk = ((dxpos) + (dypos)*NUMDESKX)+1;
+
+      while(xPos > WINW)
+        xPos-=WINW;
+      while(yPos > WINH)
+        yPos-=WINH;
+
+      HWND h = getWindowAt(xPos*COEF, yPos*COEF, desk, canvasWindowHandle);
+      if(!h)
+        return 0;      
+
+      //int flag  = (int)SendMessage(vwHandle, VW_WINGETINFO, (WPARAM) h, NULL);
+      //int wdesk = vwWindowGetInfoDesk(flag);
+
+      //char l[128];
+      //sprintf(l, "[%d] %d+%d", desk, dxpos, dypos);
+      //GetWindowText(h,l,128);
+      //MessageBox(hwnd,l,_T("Module Plugin"), 0);
+
+      //if(wdesk == desk)
+      //{               
+        // TODO: setcursor
+
+        //if(curdesk == desk)
+        //  BringWindowToTop(h);
+       
+        dragdesk = desk;
+        dragged = 0;
+        draggedc = h;
+        InvalidateRect(hwnd, NULL, FALSE);
+        return 0;
+      //}
+    } 
+    break;
+
+  default:
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+  }
+
+  return 0;
+}
+
+HWND canvasWindowCreate()
 {
   WNDCLASS wc;
+  static bool isRegistered = 0;
 
   parent = findWindowByClass(FindWindow("Shell_TrayWnd", NULL), "vwBetterPagerHost");
   if(parent == NULL)
     return 0;
 
-  // set window class
-  memset(&wc, 0, sizeof(WNDCLASS));
-  wc.style = CS_HREDRAW | CS_VREDRAW;
-  wc.lpfnWndProc = (WNDPROC)MainWndProc;
-  wc.hInstance = 0;
-  wc.hCursor = LoadCursor(0, IDC_ARROW);
+  if(isRegistered == 0)
+  {
+    // set window class
+    memset(&wc, 0, sizeof(WNDCLASS));
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = (WNDPROC)canvasWindowMessageHandler;
+    wc.hInstance = 0;
+    wc.hCursor = LoadCursor(0, IDC_ARROW);
 
-  wc.lpszClassName = _T("vwBetterPagerCanvas");
+    wc.lpszClassName = _T("vwBetterPagerCanvas");
 
-  if (!RegisterClass(&wc))
-    throw std::runtime_error("Cannot register canvas class!");
+    if (!RegisterClass(&wc))
+      throw std::runtime_error("Cannot register canvas class!");
+  }
 
-  canvasWindow = CreateWindowEx(
+  canvasWindowHandle = CreateWindowEx(
     0,                      // no extended styles
     _T("vwBetterPagerCanvas"),       // class name
     _T(""),           // window name
@@ -52,36 +308,20 @@ HWND createCanvasWindow()
     0,              // instance handle
     NULL);                  // no window creation data
 
-  if (!canvasWindow)    
+  if (!canvasWindowHandle)    
     throw std::runtime_error("Cannot create window!");
 
   // can't remember what this does, but this is undoubtfully important =)
-  ShowWindow(canvasWindow, SW_HIDE);
-  SetWindowLong(canvasWindow, GWL_EXSTYLE, GetWindowLong(canvasWindow, GWL_EXSTYLE) |
+  ShowWindow(canvasWindowHandle, SW_HIDE);
+  SetWindowLong(canvasWindowHandle, GWL_EXSTYLE, GetWindowLong(canvasWindowHandle, GWL_EXSTYLE) |
     WS_EX_TOOLWINDOW);
-  ShowWindow(canvasWindow, SW_SHOW);
+  ShowWindow(canvasWindowHandle, SW_SHOW);
 
-  UpdateWindow(canvasWindow);
+  UpdateWindow(canvasWindowHandle);
 
-  SetTimer(canvasWindow, 1, 300, NULL);
+  SetTimer(canvasWindowHandle, 1, 300, NULL);
 
-  return canvasWindow;
-  
-
-  //InitCommonControls();
-
-  //tip = CreateWindow(TOOLTIPS_CLASS, (LPSTR) NULL, TTS_ALWAYSTIP, 
-  //      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
-  //      canvasWindow, (HMENU) NULL, 0, NULL); 
-  
-
-
-
-  /*TRACKMOUSEEVENT tr;
-  tr.cbSize = sizeof(tr);
-  tr.hwndTrack = mainw;
-  tr.dwFlags = TME_LEAVE;
-  _TrackMouseEvent(&tr);*/
+  return canvasWindowHandle;
 }
 
 void createBrushes()
@@ -114,18 +354,18 @@ void createBrushes()
   inactiveWframe = CreatePen(PS_SOLID, 0, RGB(0,0,0));
 }
 
-void updateCanvasWindow()
+void canvasWindowUpdate()
 {
   //TOOLINFO ti; 
   
   static HWND lastTip = 0;
  
-  if(lastTip != tip)
+  if(lastTip != tooltipHandle)
   {
-    SendMessage(vwHandle, VW_WINMANAGE, (WPARAM)tip, 0);
-    lastTip = tip;
+    SendMessage(vwHandle, VW_WINMANAGE, (WPARAM)tooltipHandle, 0);
+    lastTip = tooltipHandle;
   }
-  SetWindowPos(canvasWindow, HWND_TOPMOST, 0, 0, WINW*NUMDESKX+1, WINH*NUMDESKY, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(canvasWindowHandle, HWND_TOPMOST, 0, 0, WINW*NUMDESKX+1, WINH*NUMDESKY, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
   /*ti.cbSize = sizeof(ti);
   ti.hinst = 0;
@@ -144,11 +384,8 @@ void updateCanvasWindow()
   //  PostMessage(tip, TTM_SETTOOLINFO, 0, (LPARAM)&ti); */
 }
 
-void deleteCanvasWindow()
+void deleteBrushes()
 {
-  if(canvasWindow == 0)
-    return;
-
   DeleteObject(activeWindow);
   DeleteObject(inactiveWindow);
   DeleteObject(activeDesk);
