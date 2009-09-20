@@ -37,31 +37,6 @@ HWND tipwin = 0;
 #include "canvasWindow.h"
 
 
-// initializes desktop sizes etc.
-void setDefaults()
-{
-  RECT deskr,winr;
-  int scrH, scrW;
-    
-  NUMDESKX = (int)SendMessage(vwHandle, VW_DESKX, 0, 0);  
-  NUMDESKY = (int)SendMessage(vwHandle, VW_DESKY, 0, 0); 
-
-  GetWindowRect(GetDesktopWindow(),&deskr);
-
-  scrW = deskr.right;
-  scrH = deskr.bottom;
-
-  GetWindowRect(parent,&winr);
-
-  if(winr.bottom-winr.top > 0)
-    COEF = NUMDESKY*scrH/(winr.bottom-winr.top);  
-  else
-    COEF = 1;
-
-  WINW = scrW/COEF;
-  WINH = scrH/COEF;   
-}
-
 void fixRect(RECT* r)
 {
   if(r->left < -20000)
@@ -333,10 +308,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
   //tooltipCreate(canvasWindowHandle);
 
   /* main messge loop */
-  while (GetMessage(&msg, NULL, 0, 0) != 0)
+  try
   {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
+    while (GetMessage(&msg, NULL, 0, 0) != 0)
+    {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+  }
+  catch(std::runtime_error e)
+  {
+    MessageBox(mainWindowHandle, e.what(), "runtime error", 1);
   }
 
   deleteBrushes();

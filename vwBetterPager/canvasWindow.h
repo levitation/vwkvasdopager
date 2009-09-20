@@ -53,6 +53,7 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
   case WM_DESTROY:
     canvasWindowHandle = 0;
+    parent = 0;
     break;
 
   case WM_PAINT:
@@ -272,7 +273,7 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 HWND canvasWindowCreate()
 {
-  WNDCLASS wc;
+  
   static bool isRegistered = 0;
 
   parent = findWindowByClass(FindWindow("Shell_TrayWnd", NULL), "vwBetterPagerHost");
@@ -281,6 +282,7 @@ HWND canvasWindowCreate()
 
   if(isRegistered == 0)
   {
+    WNDCLASS wc;
     // set window class
     memset(&wc, 0, sizeof(WNDCLASS));
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -292,6 +294,8 @@ HWND canvasWindowCreate()
 
     if (!RegisterClass(&wc))
       throw std::runtime_error("Cannot register canvas class!");
+
+    isRegistered = 1;
   }
 
   canvasWindowHandle = CreateWindowEx(

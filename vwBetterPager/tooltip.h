@@ -43,19 +43,26 @@ tooltipProcessMessages(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 HWND tooltipCreate(HWND hwndOwner) 
 {
-  WNDCLASS wc;
+  static bool isRegistered = 0;
 
-  memset(&wc, 0, sizeof(WNDCLASS));
-  wc.style = CS_HREDRAW | CS_VREDRAW;
-  wc.lpfnWndProc = (WNDPROC)tooltipProcessMessages;
-  wc.hInstance = 0;
-  wc.hCursor = LoadCursor(0, IDC_ARROW);
-  /* IMPORTANT! The classname must be the same as the filename since VirtuaWin uses 
-  this for locating the window */
-  wc.lpszClassName = _T("NotATooltip");
+  if(isRegistered == 0)
+  {
+    WNDCLASS wc;
 
-  if (!RegisterClass(&wc))
-    throw std::runtime_error("Cannot register window NotATooltip!");
+    memset(&wc, 0, sizeof(WNDCLASS));
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = (WNDPROC)tooltipProcessMessages;
+    wc.hInstance = 0;
+    wc.hCursor = LoadCursor(0, IDC_ARROW);
+    /* IMPORTANT! The classname must be the same as the filename since VirtuaWin uses 
+    this for locating the window */
+    wc.lpszClassName = _T("NotATooltip");
+
+    if (!RegisterClass(&wc))
+      throw std::runtime_error("Cannot register window NotATooltip!");
+
+    isRegistered = 1;
+  }
 
   tooltipHandle = CreateWindowEx(
     0,                      // no extended styles

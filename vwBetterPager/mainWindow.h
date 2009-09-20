@@ -5,6 +5,35 @@ HWND canvasWindowCreate();
 // app window
 HWND mainWindowHandle = 0;
 
+extern HWND parent;
+
+// initializes desktop sizes etc.
+void mainWindowSetDefaults()
+{
+  RECT deskr,winr;
+  int scrH, scrW;
+    
+  NUMDESKX = (int)SendMessage(vwHandle, VW_DESKX, 0, 0);  
+  NUMDESKY = (int)SendMessage(vwHandle, VW_DESKY, 0, 0); 
+
+  GetWindowRect(GetDesktopWindow(),&deskr);
+
+  scrW = deskr.right;
+  scrH = deskr.bottom;
+
+  GetWindowRect(parent,&winr);
+
+  if(winr.bottom-winr.top > 0)
+    COEF = NUMDESKY*scrH/(winr.bottom-winr.top);  
+  else
+    COEF = 1;
+
+  WINW = scrW/COEF;
+  WINH = scrH/COEF; 
+
+  messages = 1;
+}
+
 LRESULT CALLBACK
 mainWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -13,11 +42,12 @@ mainWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
   case MOD_INIT:
     /* This must be taken care of in order to get the handle to VirtuaWin. */
     /* The handle to VirtuaWin comes in the wParam */
-    vwHandle = (HWND) wParam; /* Should be some error handling here if NULL */        
-    setDefaults();    
-    if(canvasWindowHandle)
-      canvasWindowUpdate();
-    messages = 1;
+    vwHandle = (HWND) wParam; /* Should be some error handling here if NULL */            
+    //if(parent)
+    //  mainWindowSetDefaults();
+
+    //if(canvasWindowHandle)
+    //  canvasWindowUpdate();    
     // break; NO BREAK HERE, IT'S OK
 
   case WM_TIMER:
@@ -28,8 +58,14 @@ mainWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         tooltipCreate(canvasWindowHandle);
       return 0;
     }
-    setDefaults();    
-    canvasWindowUpdate();
+    
+    if(parent)
+      if(vwHandle)
+        mainWindowSetDefaults();    
+
+    if(canvasWindowHandle)
+      canvasWindowUpdate();
+
     break;
 
   case MOD_QUIT:
