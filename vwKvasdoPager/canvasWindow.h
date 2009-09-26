@@ -188,9 +188,9 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
       if(dragged)
       {
-        //MessageBeep(0);
+        
         if(oldoverdesk != overdesk)
-        {       
+        {                 
           oldoverdesk = overdesk;
           InvalidateRect(hwnd, NULL, FALSE);
         }
@@ -199,7 +199,7 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
       {
         if(((oldx-xPos)*(oldx-xPos) + (oldy-yPos)*(oldy-yPos)) > 25)
         {
-          //MessageBeep(0);
+          
           dragged = draggedc;
           draggedc = 0;
           InvalidateRect(hwnd, NULL, FALSE);

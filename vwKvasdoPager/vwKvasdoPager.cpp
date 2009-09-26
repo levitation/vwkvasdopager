@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "vwBetterPager.h"
+#include "vwKvasdoPager.h"
 
 #include <windows.h>
 #include <string.h>
@@ -37,31 +37,7 @@ HWND tipwin = 0;
 #include "canvasWindow.h"
 
 
-void fixRect(RECT* r)
-{
-  if(r->left < -20000)
-  {
-    r->left+=25000;
-    r->right+=25000;
-  }
-  if(r->top < -20000)
-  {
-    r->top+=25000;
-    r->bottom+=25000;
-  }
-}
 
-void clipRect(RECT* r)
-{
-  if(r->left < 0)
-    r->left=0;
-  if(r->top < 0)
-    r->top=0;
-  if(r->right > WINW*COEF)
-    r->right = WINW*COEF;
-  if(r->bottom > WINH*COEF)
-    r->bottom = WINH*COEF;
-}
 
 // stuff for rendering
 RECT dcr;
