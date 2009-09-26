@@ -112,15 +112,15 @@ HWND mainWindowCreate(HINSTANCE hInstance)
 
   /* IMPORTANT! The classname must be the same as the filename since VirtuaWin uses 
   this for locating the window */
-  wc.lpszClassName = _T("vwBetterPager.exe");
+  wc.lpszClassName = _T("vwKvasdoPager.exe");
 
   // try to register window class
   if (!RegisterClass(&wc))
     throw std::runtime_error("Cannot register main window class");
 
   /* In this example, the window is never shown */
-  mainWindowHandle = CreateWindow(_T("vwBetterPager.exe"),
-    _T("vwBetterPager"), 
+  mainWindowHandle = CreateWindow(_T("vwKvasdoPager.exe"),
+    _T("vwkvasdoPager"), 
     WS_POPUP,
     CW_USEDEFAULT, 
     0, 
