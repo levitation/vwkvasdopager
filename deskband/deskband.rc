@@ -63,11 +63,11 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "Sample DeskBand Module\0"
+            VALUE "FileDescription", "vwKvasadoPager desktop toolbar\0"
             VALUE "FileVersion", "1.0.0.0\0"
-            VALUE "LegalCopyright", "Copyright © 2002 Richard Fric\0"
-            VALUE "OriginalFilename", "deskband.dll\0"
-            VALUE "ProductName", "Sample DeskBand Module\0"
+            VALUE "LegalCopyright", "Copyright © 2009 Alexey Guskov\0"
+            VALUE "OriginalFilename", "vwKvasdoPagerBand.dll\0"
+            VALUE "ProductName", "vwKvasdoPager for VirtuaWin\0"
             VALUE "ProductVersion", "1.0.0.0\0"
         END
     END
