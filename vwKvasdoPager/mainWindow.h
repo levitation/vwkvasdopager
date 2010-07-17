@@ -1,3 +1,5 @@
+#include <Uxtheme.h>
+
 void setDefaults();
 void canvasWindowUpdate();
 HWND canvasWindowCreate();
@@ -5,13 +7,27 @@ HWND canvasWindowCreate();
 // app window
 HWND mainWindowHandle = 0;
 
+typedef BOOL (WINAPI *vwISTHEMEACTIVE)(void) ;
+vwISTHEMEACTIVE vwIsThemeActive ;
+typedef HRESULT (WINAPI *vwBUFFEREDPAINTINIT)(void) ;
+vwBUFFEREDPAINTINIT vwBufferedPaintInit ;
+typedef HRESULT (WINAPI *vwBUFFEREDPAINTUNINIT)(void) ;
+vwBUFFEREDPAINTUNINIT vwBufferedPaintUnInit ;
+typedef HPAINTBUFFER (WINAPI *vwBEGINBUFFEREDPAINT)(HDC,const RECT *,BP_BUFFERFORMAT,__in BP_PAINTPARAMS *,__out HDC *) ;
+vwBEGINBUFFEREDPAINT vwBeginBufferedPaint ;
+typedef HRESULT (WINAPI *vwENDBUFFEREDPAINT)(HPAINTBUFFER,BOOL) ;
+vwENDBUFFEREDPAINT vwEndBufferedPaint ;
+typedef DWORD (WINAPI *vwBUFFEREDPAINTSETALPHA)(HPAINTBUFFER, __in  const RECT *, BYTE) ;
+vwBUFFEREDPAINTSETALPHA vwBufferedPaintSetAlpha ;
+BOOL vwUseBufferedPaint=FALSE ;
+
 extern HWND parent;
 
 // initializes desktop sizes etc.
 void mainWindowSetDefaults()
 {
   RECT deskr,winr;
-  int scrH, scrW;
+  int scrH, scrW, winH ;
     
   NUMDESKX = (int)SendMessage(vwHandle, VW_DESKX, 0, 0);  
   NUMDESKY = (int)SendMessage(vwHandle, VW_DESKY, 0, 0); 
@@ -22,9 +38,31 @@ void mainWindowSetDefaults()
   scrH = deskr.bottom;
 
   GetWindowRect(parent,&winr);
-
-  if(winr.bottom-winr.top > 0)
-    COEF = NUMDESKY*scrH/(winr.bottom-winr.top);  
+    
+  winH = winr.bottom-winr.top ;
+    
+  if((vwIsThemeActive != NULL) && vwIsThemeActive())
+  {
+    /* TODO: should check the location of the taskbar */
+    winH -= 6 ;
+    WINY = 4 ;
+    if((vwBufferedPaintInit != NULL) && !vwUseBufferedPaint)
+    {
+      vwUseBufferedPaint = TRUE ;
+      vwBufferedPaintInit() ;
+    }
+  }
+  else
+  {
+    WINY = 0 ;
+    if(vwUseBufferedPaint)
+    {
+      vwBufferedPaintUnInit() ;
+      vwUseBufferedPaint = FALSE ;
+    }
+  }    
+  if(winH > 0)
+    COEF = NUMDESKY*scrH/winH ;
   else
     COEF = 1;
 
@@ -43,11 +81,7 @@ mainWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     /* This must be taken care of in order to get the handle to VirtuaWin. */
     /* The handle to VirtuaWin comes in the wParam */
     vwHandle = (HWND) wParam; /* Should be some error handling here if NULL */            
-    //if(parent)
-    //  mainWindowSetDefaults();
-
-    //if(canvasWindowHandle)
-    //  canvasWindowUpdate();    
+    
     // break; NO BREAK HERE, IT'S OK
 
   case WM_TIMER:
@@ -58,9 +92,14 @@ mainWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         tooltipCreate(canvasWindowHandle);
       return 0;
     }
-    
-    if(parent)
-      if(vwHandle)
+    /* no break */
+
+#ifndef WM_THEMECHANGED
+#define WM_THEMECHANGED                 0x031A
+#endif
+  case WM_THEMECHANGED:
+
+    if(parent && vwHandle)
         mainWindowSetDefaults();    
 
     if(canvasWindowHandle)

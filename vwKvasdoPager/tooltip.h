@@ -16,7 +16,7 @@ void tooltipPaint()
   
   GetWindowRect(tooltipHandle, &r);
   Rectangle(dc, 0, 0, r.right-r.left, r.bottom-r.top);
-  TextOut(dc,3, 2, tiptext, strlen(tiptext));
+  TextOut(dc,3, 2, tiptext, (int) strlen(tiptext));
   EndPaint(tooltipHandle, &ps);
 }
 
@@ -113,7 +113,7 @@ void tooltipUpdate()
 
   GetWindowRect(canvasWindowHandle, &r);
 
-  GetTextExtentPoint(dc, tiptext, strlen(tiptext), &s);
+  GetTextExtentPoint(dc, tiptext, (int) strlen(tiptext), &s);
 
   int x = r.left + (WINW*(overdesk-1) + WINW/2) - s.cx/2 - 3;
   if(x<5)
@@ -127,13 +127,13 @@ void tooltipUpdate()
   SetTimer(tooltipHandle, 1, 1000, 0); // FIXME: ugly tooltip hack
 }
 
-tooltipDisable()
+void tooltipDisable()
 {
   ShowWindow(tooltipHandle, SW_HIDE);
   tooltipEnabled = false;
 }
 
-tooltipEnable()
+void tooltipEnable()
 {
   tooltipEnabled = true;
 }

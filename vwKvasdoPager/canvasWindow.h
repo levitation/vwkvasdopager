@@ -126,8 +126,8 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
       int xPos = tipXpos = LOWORD(lParam);  // horizontal position of cursor
       int yPos = tipYpos = HIWORD(lParam);  // vertical position of cursor            
       
-      int dxPos = LOWORD(lParam)/WINW;  // horizontal position of cursor
-      int dyPos = HIWORD(lParam)/WINH;  // vertical position of cursor      
+      int dxPos = xPos/WINW;  // horizontal position of cursor
+      int dyPos = yPos/WINH;  // vertical position of cursor      
 
       if(dxPos >= NUMDESKX)
         dxPos = NUMDESKX-1;
@@ -276,8 +276,8 @@ HWND canvasWindowCreate()
   
   static bool isRegistered = 0;
 
-  parent = findWindowByClass(FindWindow("Shell_TrayWnd", NULL), "vwBetterPagerHost");
-  if(parent == NULL)
+  if(((parent = findWindowByClass(FindWindow("Shell_TrayWnd", NULL), "vwBetterPagerHost")) == NULL) &&
+     ((parent = findWindowByClass(FindWindow("BaseBar", "KvasdoPager"), "vwBetterPagerHost")) == NULL))
     return 0;
 
   if(isRegistered == 0)
@@ -369,7 +369,7 @@ void canvasWindowUpdate()
     SendMessage(vwHandle, VW_WINMANAGE, (WPARAM)tooltipHandle, 0);
     lastTip = tooltipHandle;
   }
-  SetWindowPos(canvasWindowHandle, HWND_TOPMOST, 0, 0, WINW*NUMDESKX+1, WINH*NUMDESKY, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(canvasWindowHandle, HWND_TOPMOST, 0, WINY, WINW*NUMDESKX+1, WINH*NUMDESKY, SWP_NOZORDER | SWP_NOACTIVATE);
 
   /*ti.cbSize = sizeof(ti);
   ti.hinst = 0;
