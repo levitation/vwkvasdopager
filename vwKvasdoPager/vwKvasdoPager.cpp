@@ -37,6 +37,7 @@ HWND tipwin = 0;
 #include "tooltip.h"
 #include "mainWindow.h"
 #include "canvasWindow.h"
+#include "mouseHook.h"
 
 
 // stuff for rendering
@@ -360,6 +361,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
        ((vwBufferedPaintUnInit = (vwBUFFEREDPAINTUNINIT) GetProcAddress(libHandle,"BufferedPaintUnInit")) != NULL))
       vwBufferedPaintInit = (vwBUFFEREDPAINTINIT) GetProcAddress(libHandle,"BufferedPaintInit") ;
   }
+
+  mouseHookRegister();
 
   mainWindowCreate(hInstance);
   createBrushes();
