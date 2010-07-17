@@ -21,7 +21,8 @@ HWND parent = 0;	// deskband window
 // dragged window handler
 HWND dragged = 0;
 HWND draggedc = 0;
-int dragdesk, overdesk, oldoverdesk;
+HWND mousedownHwnd = 0;
+int mousedowndesk, overdesk, oldoverdesk;
 int curdesk = 0;
 int lastredraw = 0;
 
@@ -62,15 +63,24 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
   case WM_LBUTTONUP:
     {
-      int xPos = LOWORD(lParam)/WINW;  // horizontal position of cursor
-      int yPos = HIWORD(lParam)/WINH;  // vertical position of cursor      
+      short xPos = LOWORD(lParam);  // horizontal position of cursor
+      short yPos = HIWORD(lParam);  // vertical position of cursor   
 
-      if(xPos >= NUMDESKX)
-        xPos = NUMDESKX-1;
-      if(yPos >= NUMDESKY)
-        yPos = NUMDESKY-1;
+      ReleaseCapture();
 
-      int desk = ((xPos) + (yPos)*NUMDESKX)+1;      
+      // Bails out if cursor outside the pager
+      RECT clientRect;
+      GetClientRect(hwnd, &clientRect);
+      if(xPos < 0 || yPos < 0 || xPos >= clientRect.right || yPos >= clientRect.bottom)
+      {
+        dragged = 0;
+        draggedc = 0;
+        return 0;
+      }
+      
+      int dxPos = xPos/WINW;  // horizontal position of cursor
+      int dyPos = yPos/WINH;  // vertical position of cursor    
+      int desk = ((dxPos) + (dyPos)*NUMDESKX)+1;      
 
       if(dragged)
       {
@@ -97,7 +107,9 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             ymPos-=WINH;
 
           HWND h = getWindowAt(xmPos*COEF, ymPos*COEF, desk, canvasWindowHandle);
-          if(h)
+
+          // Bring window to top if we've moused down on it
+          if(h && h == mousedownHwnd)
           {
             //MessageBeep(0);
             BringWindowToTop(h);
@@ -112,7 +124,10 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         //tiptext[0] = 0;
         //updateTip();
         //disableTip();
-        SendMessage(vwHandle, VW_CHANGEDESK, desk, desk);
+
+        // Switch to desk if we've moused down on it
+        if(mousedowndesk == desk)
+          SendMessage(vwHandle, VW_CHANGEDESK, desk, desk);
         //enableTip();
         draggedc = 0;
         
@@ -123,8 +138,17 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
   case WM_MOUSEMOVE:
     {     
-      int xPos = tipXpos = LOWORD(lParam);  // horizontal position of cursor
-      int yPos = tipYpos = HIWORD(lParam);  // vertical position of cursor            
+      short xPos = tipXpos = LOWORD(lParam);  // horizontal position of cursor
+      short yPos = tipYpos = HIWORD(lParam);  // vertical position of cursor   
+
+      // Bails out if cursor outside the pager
+      RECT clientRect;
+      GetClientRect(hwnd, &clientRect);
+      if(xPos < 0 || yPos < 0 || xPos >= clientRect.right || yPos >= clientRect.bottom)
+      {
+        overdesk = mousedowndesk;
+        return 0;
+      }
       
       int dxPos = xPos/WINW;  // horizontal position of cursor
       int dyPos = yPos/WINH;  // vertical position of cursor      
@@ -236,7 +260,10 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
       while(yPos > WINH)
         yPos-=WINH;
 
+      mousedowndesk = desk;
+
       HWND h = getWindowAt(xPos*COEF, yPos*COEF, desk, canvasWindowHandle);
+      mousedownHwnd = h;
       if(!h)
         return 0;      
 
@@ -255,7 +282,8 @@ canvasWindowMessageHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         //if(curdesk == desk)
         //  BringWindowToTop(h);
        
-        dragdesk = desk;
+        SetCapture(hwnd);
+
         dragged = 0;
         draggedc = h;
         InvalidateRect(hwnd, NULL, FALSE);
