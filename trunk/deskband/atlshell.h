@@ -8,6 +8,10 @@
 #include <atlbase.h>
 #include <shlobj.h>
 #include <comdef.h>
+#include <Strsafe.h>
+
+typedef BOOL (WINAPI *vwISTHEMEACTIVE)(void) ;
+typedef HRESULT (WINAPI *vwDRAWTHEMEPARENTBACKGROUND)(__in  HWND, __in  HDC, __in  const RECT *);
 
 struct _ATL_TYPEMAP_ENTRY
 {
@@ -154,10 +158,10 @@ struct _ATL_MENUMAP_ENTRY
 
 template<const CLSID *pclsid,const _ATL_MENUMAP_ENTRY *pMenu = NULL>
 class ATL_NO_VTABLE CDeskBand : public CComObjectRootEx<CComSingleThreadModel>,
-	IObjectWithSite, IPersistStream, IDeskBand/*, IContextMenu*/
+	public IObjectWithSite, public IPersistStream, public IDeskBand2/*, IContextMenu*/
 {
 public:
-	CDeskBand() : m_pSite( NULL ), m_hWnd( NULL ) {}
+	CDeskBand() : m_pSite( NULL ), m_hWnd( NULL ), m_iThemed( 0 ), m_pIsThemeActive( NULL ), m_pDrawThemeParentBackground( NULL ) {}
 
 	BEGIN_COM_MAP(CDeskBand)
 		COM_INTERFACE_ENTRY(IObjectWithSite)
@@ -166,6 +170,7 @@ public:
 		COM_INTERFACE_ENTRY(IOleWindow)
 		COM_INTERFACE_ENTRY(IDockingWindow)
 		COM_INTERFACE_ENTRY(IDeskBand)
+		COM_INTERFACE_ENTRY(IDeskBand2)
 //		COM_INTERFACE_ENTRY(IContextMenu)
 	END_COM_MAP()
 
@@ -205,14 +210,14 @@ public:
 				if( ! ::GetClassInfo( _Module.m_hInst, lpClassName, &wc ) )
 				{
 					::ZeroMemory( &wc, sizeof(wc) );
-					wc.style			= 0;//CS_HREDRAW | CS_VREDRAW | CS_GLOBALCLASS;
+					wc.style		= CS_HREDRAW | CS_VREDRAW;
 					wc.lpfnWndProc		= (WNDPROC)CDeskBand::WndProc;
 					wc.cbClsExtra		= 0;
 					wc.cbWndExtra		= 0;
 					wc.hInstance		= _Module.m_hInst;
-					wc.hIcon			= NULL;
-					wc.hCursor			= ::LoadCursor( NULL, IDC_ARROW );
-					wc.hbrBackground	= (HBRUSH)::CreateSolidBrush( ::GetSysColor( COLOR_3DFACE ) );
+					wc.hIcon		= NULL;
+					wc.hCursor		= ::LoadCursor( NULL, IDC_ARROW );
+					wc.hbrBackground	= (HBRUSH) (COLOR_BTNFACE+1);
 					wc.lpszMenuName		= NULL;
 					wc.lpszClassName	= lpClassName;
 
@@ -223,13 +228,24 @@ public:
 				::GetClientRect( hWndParent, &rc );
 
 				// create the window, the WndProc will set m_hWnd
-				::CreateWindowEx( 0, lpClassName, NULL, WS_CHILD | WS_EX_TRANSPARENT,
+				::CreateWindowEx(WS_EX_TRANSPARENT, lpClassName, NULL, WS_CHILD,
 					rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, hWndParent, NULL, _Module.m_hInst, (LPVOID)this );
 			}
 
 			if( ! m_hWnd )
 				return E_FAIL;
-
+			
+			if(m_iThemed >= 0)
+			{
+				HINSTANCE libHandle ; 
+				if((m_pIsThemeActive == NULL) &&
+				   (((libHandle = LoadLibrary(_T("UxTheme"))) == NULL) ||
+				    ((m_pDrawThemeParentBackground = (vwDRAWTHEMEPARENTBACKGROUND) GetProcAddress(libHandle,"DrawThemeParentBackground")) == NULL) ||
+				    ((m_pIsThemeActive = (vwISTHEMEACTIVE) GetProcAddress(libHandle,"IsThemeActive")) == NULL)))
+					m_iThemed = -1 ;
+				else
+					m_iThemed = (m_pIsThemeActive()) ? 1:0 ;
+			}
 			m_pSite = punkSite;	// keep the site pointer
 		}
 
@@ -325,16 +341,8 @@ public:
 
 		if( pdbi->dwMask & DBIM_MINSIZE )
 		{
-			if( dwViewMode & DBIF_VIEWMODE_FLOATING )
-			{
-				pdbi->ptMinSize.x = 10;
-				pdbi->ptMinSize.y = 10;
-			}
-			else
-			{
-				pdbi->ptMinSize.x = 10;
-				pdbi->ptMinSize.y = 0;
-			}
+                    pdbi->ptMinSize.x = 10;
+                    pdbi->ptMinSize.y = 10;
 		}
 
 		if( pdbi->dwMask & DBIM_MAXSIZE )
@@ -351,13 +359,18 @@ public:
 
 		if( pdbi->dwMask & DBIM_ACTUAL )
 		{
-			pdbi->ptActual.x = 100;
+			pdbi->ptActual.x = 0;
 			pdbi->ptActual.y = 0;
 		}
 
 		if( pdbi->dwMask & DBIM_TITLE )
-			pdbi->dwMask &= ~DBIM_TITLE;
-
+                {
+			if( dwViewMode & DBIF_VIEWMODE_FLOATING )
+                            StringCbCopyW(pdbi->wszTitle, sizeof(pdbi->wszTitle), L"KvasdoPager");
+                        else
+                            pdbi->dwMask &= ~DBIM_TITLE;
+                }
+            
 		if( pdbi->dwMask & DBIM_MODEFLAGS )
 		{
 			pdbi->dwModeFlags = DBIMF_NORMAL;
@@ -370,7 +383,26 @@ public:
 		return S_OK;
 	}
 
-	// IContextMenu methods
+	// IDeskband2 Methods
+	STDMETHOD(CanRenderComposited)( BOOL *pfCanRenderComposited )
+	{
+		*pfCanRenderComposited = TRUE;
+		return S_OK;
+	}
+
+	STDMETHOD(SetCompositionState)( BOOL fCompositionEnabled )
+	{
+		this->compositionEnabled = fCompositionEnabled;
+		return S_OK;
+	}
+
+	STDMETHOD(GetCompositionState)( BOOL *pfCompositionEnabled )
+	{
+		*pfCompositionEnabled = this->compositionEnabled;
+		return S_OK;
+	}
+    
+        // IContextMenu methods
 	STDMETHOD(GetCommandString)( UINT idCmd, UINT uFlags, LPUINT /*pwReserved*/, LPSTR lpszName, UINT cchMax )
 	{
 		if( pMenu )
@@ -503,20 +535,30 @@ protected:
 
 	HWND m_hWnd;
 	IUnknown *m_pSite;
+	BOOL compositionEnabled;
+	int m_iThemed;
+	vwISTHEMEACTIVE m_pIsThemeActive;
+	vwDRAWTHEMEPARENTBACKGROUND m_pDrawThemeParentBackground;
 
 private:
 	static LRESULT CALLBACK WndProc( HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam )
 	{
+#ifdef WIN64
+		CDeskBand *pThis = (CDeskBand*)::GetWindowLongPtr( hWnd, GWLP_USERDATA );
+#else
 		CDeskBand *pThis = (CDeskBand*)::GetWindowLong( hWnd, GWL_USERDATA );
-
+#endif
 		switch( uMessage )
 		{
 			case WM_NCCREATE:
 			{
 				LPCREATESTRUCT lpcs = (LPCREATESTRUCT)lParam;
 				pThis = (CDeskBand*)lpcs->lpCreateParams;
+#ifdef WIN64
+				::SetWindowLongPtr( hWnd, GWLP_USERDATA, (size_t)pThis );
+#else
 				::SetWindowLong( hWnd, GWL_USERDATA, (LONG)pThis );
-
+#endif
 				// set the window handle
 				pThis->m_hWnd = hWnd;
 			}
@@ -536,6 +578,14 @@ private:
 
 			case WM_SIZE:
 				return pThis->OnSize( wParam, lParam );
+
+#ifndef WM_THEMECHANGED
+#define WM_THEMECHANGED                 0x031A
+#endif
+			case WM_THEMECHANGED:
+				if(pThis->m_pIsThemeActive != NULL)
+					pThis->m_iThemed = (pThis->m_pIsThemeActive()) ? 1:0 ;
+				break;
 
 			default:
 				break;
