@@ -1,4 +1,27 @@
 /**
+* get window rect relative to the large multi-monitor desktop
+*/
+int multiMonGetWindowRect(HWND hWnd, LPRECT lpRect)
+{
+	BOOL success;
+	int xOffset = GetSystemMetrics(SM_XVIRTUALSCREEN);
+	int yOffset = GetSystemMetrics(SM_YVIRTUALSCREEN);
+	
+	success = GetWindowRect(hWnd, lpRect);
+
+	if(success)
+	{
+		// Adjust windows rect on multi-monitor systems
+		lpRect->left   -= xOffset;
+		lpRect->right  -= xOffset;
+		lpRect->top    -= yOffset;
+		lpRect->bottom -= yOffset;
+	}
+
+	return success;
+}
+
+/**
 * search for window with given class name
 */
 HWND findWindowByClass(HWND parent, char* className)
@@ -41,7 +64,7 @@ HWND getWindowAt(int x, int y, int desk, HWND skipWindow)
       if(h != skipWindow)
       {
         RECT r;        
-        GetWindowRect(h, &r);
+        multiMonGetWindowRect(h, &r);
 
         if(r.left < -20000)
         {

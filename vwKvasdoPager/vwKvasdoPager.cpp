@@ -111,7 +111,7 @@ int redrawWindow(HWND hwnd)
     RECT r;  
     if(h != hwnd) // not render myself
     {
-      if(GetWindowRect(h, &r))
+      if(multiMonGetWindowRect(h, &r))
       {
         // get window desktop
         int flag  = (int)SendMessage(vwHandle, VW_WINGETINFO, (WPARAM) h, NULL);
@@ -230,7 +230,7 @@ int redrawWindow(HWND hwnd)
     RECT r;
     RECT tr;
 
-    GetWindowRect(dragged, &r);
+    multiMonGetWindowRect(dragged, &r);
     
     fixRect(&r);
 

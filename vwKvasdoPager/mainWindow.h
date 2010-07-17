@@ -26,16 +26,15 @@ extern HWND parent;
 // initializes desktop sizes etc.
 void mainWindowSetDefaults()
 {
-  RECT deskr,winr;
+  RECT winr;
   int scrH, scrW, winH ;
     
   NUMDESKX = (int)SendMessage(vwHandle, VW_DESKX, 0, 0);  
   NUMDESKY = (int)SendMessage(vwHandle, VW_DESKY, 0, 0); 
 
-  GetWindowRect(GetDesktopWindow(),&deskr);
-
-  scrW = deskr.right;
-  scrH = deskr.bottom;
+  // Get screen 
+  scrW = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+  scrH = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
   GetWindowRect(parent,&winr);
     
