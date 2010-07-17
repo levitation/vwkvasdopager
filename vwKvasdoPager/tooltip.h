@@ -115,6 +115,8 @@ void tooltipUpdate()
 
   GetTextExtentPoint(dc, tiptext, (int) strlen(tiptext), &s);
 
+  ReleaseDC(tooltipHandle, dc);
+
   int x = r.left + (WINW*(overdesk-1) + WINW/2) - s.cx/2 - 3;
   if(x<5)
     x = 5;
