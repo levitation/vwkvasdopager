@@ -55,7 +55,8 @@ Global
 		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Debug|x64.ActiveCfg = Debug|Win32
 		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinDependency|Win32.ActiveCfg = Release MinDependency|Win32
 		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinDependency|Win32.Build.0 = Release MinDependency|Win32
-		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinDependency|x64.ActiveCfg = Release MinDependency|Win32
+		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinDependency|x64.ActiveCfg = Release MinDependency|x64
+		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinDependency|x64.Build.0 = Release MinDependency|x64
 		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinSize|Win32.ActiveCfg = Release MinSize|Win32
 		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinSize|Win32.Build.0 = Release MinSize|Win32
 		{3E3337FE-3877-4CC0-B2AA-F701012B3135}.Release MinSize|x64.ActiveCfg = Release MinSize|Win32
