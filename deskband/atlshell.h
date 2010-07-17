@@ -177,13 +177,6 @@ public:
 	// IObjectWithSite methods
 	STDMETHOD(SetSite)( IUnknown *punkSite )
 	{
-		// if a site is being held, release it
-		if( m_pSite )
-		{
-			m_pSite->Release();
-			m_pSite = NULL;
-		}
-
 		// if punkSite is not NULL, a new site is being set
 		if( punkSite )
 		{
@@ -246,8 +239,18 @@ public:
 				else
 					m_iThemed = (m_pIsThemeActive()) ? 1:0 ;
 			}
-			m_pSite = punkSite;	// keep the site pointer
+
+			// Hold on this object
+			punkSite->AddRef();
 		}
+
+		// Release old site pointer
+		if( m_pSite )
+			m_pSite->Release();
+
+		// keep new site pointer or NULL
+		m_pSite = punkSite;
+
 
 		return S_OK;
 	}
