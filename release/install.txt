@@ -1,0 +1,16 @@
+0) Скачать и установить VirtualWin с сайта http://virtuawin.sourceforge.net/
+1) vwKvaspPager.exe надо положить в папку где живут 
+модули VirtualWin, например 'c:\Program Files\VirtuaWin\modules'
+2) Выполнить install-dll.bat, оно зарегистрирует библиотеку vwKvasdoPagerBand.dll
+3) В панели задач станет доступна новая панель: "KvasdoPager", её нужно добавить на таскбар 
+4) Теперь можно запускать VirtuaWin и пырить
+
+--
+
+0) Download and install VirtualWin from http://virtuawin.sourceforge.net/
+1) Copy vwKvasoPager.exe into the VirtuaWin modules directory, e.g. 
+'c:\Program Files\VirtuaWin\modules'
+2) Run 'install-dll.bat', this registers the required vwKvasdoPagerBand.dll
+3) Right click on the toolbar and in the menu which opens enable 
+Toolbars -> 'KvasdoPager', note that you may need to disable 'Lock the toolbar'
+4) Restart VirtuaWin.
